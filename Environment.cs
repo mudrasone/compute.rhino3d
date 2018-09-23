@@ -1,4 +1,5 @@
 ﻿using System;
+using Serilog;
 
 namespace RhinoCommon.Rest
 {
@@ -27,7 +28,7 @@ namespace RhinoCommon.Rest
             if (int.TryParse(value, out result))
                 return result;
 
-            Console.WriteLine($"environment variable {variable} set to '{value}'; unable to parse as integer.");
+            Log.Warning("Environment variable {Variable} set to {Value}; unable to parse as integer.", variable, value);
             return defaultValue;
         }
     }

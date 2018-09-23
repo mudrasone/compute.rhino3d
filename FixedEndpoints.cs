@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using Nancy;
+using Serilog;
 
 namespace RhinoCommon.Rest
 {
@@ -58,7 +59,7 @@ namespace RhinoCommon.Rest
             if (client_secrets.Count != 1 || client_secrets[0] != secret)
                 return HttpStatusCode.NotFound;
 
-            Console.WriteLine("It's hammer time!", null);
+            Log.Debug("It's hammer time!");
             var watch = System.Diagnostics.Stopwatch.StartNew();
 
             var pt = Rhino.Geometry.Point3d.Origin;
@@ -74,7 +75,7 @@ namespace RhinoCommon.Rest
                 );
 
             watch.Stop();
-            Console.WriteLine($"The party lasted for {watch.Elapsed.TotalSeconds} seconds!", null);
+            Log.Debug("The party lasted for {Time} seconds!", watch.Elapsed.TotalSeconds);
 
             var values = new Dictionary<string, double>() {
                 { "answer", msp3[0].Volume() },

@@ -1,13 +1,15 @@
 ﻿using System;
+using System.Text;
+using System.Collections.Generic;
 using Nancy.Hosting.Self;
 using Nancy.Extensions;
-using Topshelf;
 using Nancy.Conventions;
 using Nancy.Bootstrapper;
 using Nancy.TinyIoc;
 using Nancy.Gzip;
-using System.Collections.Generic;
 using RhinoCommon.Rest.Authentication;
+using Serilog;
+using Topshelf;
 
 namespace RhinoCommon.Rest
 {
@@ -15,6 +17,8 @@ namespace RhinoCommon.Rest
     {
         static void Main(string[] args)
         {
+            Logger.Init();
+
             // You may need to configure the Windows Namespace reservation to assign
             // rights to use the port that you set below.
             // See: https://github.com/NancyFx/Nancy/wiki/Self-Hosting-Nancy
@@ -30,6 +34,7 @@ namespace RhinoCommon.Rest
 
             Topshelf.HostFactory.Run(x =>
             {
+                x.UseSerilog();
                 x.ApplyCommandLine();
                 x.SetStartTimeout(new TimeSpan(0, 1, 0));
                 x.Service<NancySelfHost>(s =>
@@ -56,8 +61,7 @@ namespace RhinoCommon.Rest
 
         public void Start(int http_port, int https_port)
         {
-            Logger.Init(new TempFileLogger());
-            Logger.Info(null, $"Launching RhinoCore library as {Environment.UserName}");
+            Log.Information("Launching RhinoCore library as {User}", Environment.UserName);
             RhinoLib.LaunchInProcess(RhinoLib.LoadMode.Headless, 0);
             var config = new HostConfiguration();
             var listenUriList = new List<Uri>();
@@ -70,18 +74,19 @@ namespace RhinoCommon.Rest
             if (listenUriList.Count > 0)
                 _nancyHost = new NancyHost(config, listenUriList.ToArray());
             else
-                Logger.Info(null, "ERROR: neither http_port nor https_port are set; NOT LISTENING!");
+            {
+                Log.Error("Neither COMPUTE_HTTP_PORT nor COMPUTE_HTTPS_PORT are set. Not listening!");
+                Environment.Exit(1);
+            }
             try
             {
                 _nancyHost.Start();
                 foreach (var uri in listenUriList)
-                    Logger.Info(null, $"Running on {uri.OriginalString}");
+                    Log.Information("Running on {Uri}", uri.OriginalString);
             }
-            catch (Nancy.Hosting.Self.AutomaticUrlReservationCreationFailureException)
+            catch (AutomaticUrlReservationCreationFailureException)
             {
-                Logger.Error(null, Environment.NewLine + "URL Not Reserved. From an elevated command promt, run:" + Environment.NewLine);
-                foreach (var uri in listenUriList)
-                    Logger.Error(null, $"netsh http add urlacl url=\"{uri.Scheme}://+:{uri.Port}/\" user=\"Everyone\"");
+                Log.Error(GetAutomaticUrlReservationCreationFailureExceptionMessage(listenUriList));
                 Environment.Exit(1);
             }
         }
@@ -89,6 +94,17 @@ namespace RhinoCommon.Rest
         public void Stop()
         {
             _nancyHost.Stop();
+        }
+
+        // TODO: move this somewhere else
+        string GetAutomaticUrlReservationCreationFailureExceptionMessage(List<Uri> listenUriList)
+        {
+            var msg = new StringBuilder();
+            msg.AppendLine("Url not reserved. From an elevated command promt, run:");
+            msg.AppendLine();
+            foreach (var uri in listenUriList)
+                msg.AppendLine($"netsh http add urlacl url=\"{uri.Scheme}://+:{uri.Port}/\" user=\"Everyone\"");
+            return msg.ToString();
         }
     }
 

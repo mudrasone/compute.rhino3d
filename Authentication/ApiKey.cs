@@ -1,6 +1,7 @@
 ﻿using System;
 using Nancy;
 using Nancy.Bootstrapper;
+using Serilog;
 
 namespace RhinoCommon.Rest.Authentication
 {
@@ -9,7 +10,7 @@ namespace RhinoCommon.Rest.Authentication
         public static void AddAuthApiKey(this IPipelines pipelines)
         {
             pipelines.BeforeRequest += VerifyApiKey;
-            Logger.Info(null, "API Key authentication enabled");
+            Log.Information("API Key authentication enabled");
         }
 
         private static Response VerifyApiKey(NancyContext context)
