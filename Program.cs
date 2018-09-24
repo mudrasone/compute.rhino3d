@@ -1,15 +1,16 @@
 ﻿using System;
 using System.Text;
 using System.Collections.Generic;
-using Nancy.Hosting.Self;
-using Nancy.Extensions;
-using Nancy.Conventions;
 using Nancy.Bootstrapper;
-using Nancy.TinyIoc;
+using Nancy.Conventions;
+using Nancy.Extensions;
 using Nancy.Gzip;
+using Nancy.Hosting.Self;
+using Nancy.TinyIoc;
 using RhinoCommon.Rest.Authentication;
 using Serilog;
 using Topshelf;
+using Nancy;
 
 namespace RhinoCommon.Rest
 {
@@ -17,7 +18,18 @@ namespace RhinoCommon.Rest
     {
         static void Main(string[] args)
         {
-            Logger.Init();
+            //Logger.Init();
+            Log.Logger = new LoggerConfiguration()
+#if DEBUG
+                .MinimumLevel.Debug()
+#endif
+                .Enrich.FromLogContext()
+                .WriteTo.Console(outputTemplate:
+                    "{Timestamp:o} {Level:w3}: {Message:lj} {Properties:j}{NewLine}{Exception}")
+                //.WriteTo.Console(new Serilog.Formatting.Json.JsonFormatter())
+                .CreateLogger();
+
+            Log.Information("No contextual properties");
 
             // You may need to configure the Windows Namespace reservation to assign
             // rights to use the port that you set below.
@@ -114,8 +126,8 @@ namespace RhinoCommon.Rest
 
         protected override void ApplicationStartup(TinyIoCContainer container, IPipelines pipelines)
         {
-            Logger.Debug(null, "ApplicationStartup");
-            pipelines.AddRequestId();
+            Log.Debug("ApplicationStartup");
+            pipelines.AddHeadersAndLogging();
             pipelines.EnableGzipCompression(new GzipCompressionSettings() { MinimumBytes = 1024 });
 
             if (Env.GetEnvironmentBool("COMPUTE_AUTH_RHINOACCOUNT", false))

@@ -28,7 +28,7 @@ namespace RhinoCommon.Rest
             if (int.TryParse(value, out result))
                 return result;
 
-            Log.Warning("Environment variable {Variable} set to {Value}; unable to parse as integer.", variable, value);
+            Log.Warning("Environment variable {Variable} set to '{Value}'; unable to parse as integer.", variable, value);
             return defaultValue;
         }
     }

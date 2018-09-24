@@ -4,6 +4,7 @@ using Nancy.Bootstrapper;
 using Nancy.Extensions;
 using Newtonsoft.Json.Linq;
 using Amazon.S3;
+using Serilog;
 
 
 namespace RhinoCommon.Rest
@@ -24,12 +25,12 @@ namespace RhinoCommon.Rest
             if (Env.GetEnvironmentBool("COMPUTE_STASH_TEMPFILE", false))
             {
                 pipelines.BeforeRequest += TempFileStasher;
-                Logger.Info(null, "Request stashing enabled via TempFileStasher");
+                Log.Information("Request stashing enabled via TempFileStasher");
             }
-            if (Env.GetEnvironmentBool("COMPUTE_STASH_AMAZONS3", false))
+            if (Env.GetEnvironmentBool("COMPUTE_STASH_AMAZONS3", true))
             {
                 pipelines.BeforeRequest += AmazonS3RequestStasher;
-                Logger.Info(null, "Request stashing enabled via AmazonS3RequestStasher");
+                Log.Information("Request stashing enabled via AmazonS3RequestStasher");
             }
         }
         public static Response AmazonS3RequestStasher(NancyContext context)
@@ -38,7 +39,7 @@ namespace RhinoCommon.Rest
                 return null;
 
             object request_id = null;
-            if (!context.Items.TryGetValue("x-compute-id", out request_id))
+            if (!context.Items.TryGetValue("RequestId", out request_id))
             {
                 return null;
             }
@@ -46,7 +47,8 @@ namespace RhinoCommon.Rest
             var bucket = Environment.GetEnvironmentVariable("COMPUTE_STASH_S3_BUCKET");
             if (string.IsNullOrWhiteSpace(bucket))
             {
-                Logger.Warning(context, "COMPUTE_STASH_S3_BUCKET not set");
+                Log.ForContext("RequestId", context.Items["RequestId"])
+                    .Warning("COMPUTE_STASH_S3_BUCKET not set");
                 return null;
             }
 
@@ -100,7 +102,7 @@ namespace RhinoCommon.Rest
             if (!System.IO.Directory.Exists(stashDir))
                 System.IO.Directory.CreateDirectory(stashDir);
 
-            string filename = System.IO.Path.Combine(stashDir, string.Format("{0}.request.log", context.Items["x-compute-id"]));
+            string filename = System.IO.Path.Combine(stashDir, string.Format("{0}.request.log", context.Items["RequestId"]));
 
             System.IO.File.WriteAllText(filename, GetRequestJson(context));
 
