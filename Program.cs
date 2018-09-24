@@ -18,18 +18,7 @@ namespace RhinoCommon.Rest
     {
         static void Main(string[] args)
         {
-            //Logger.Init();
-            Log.Logger = new LoggerConfiguration()
-#if DEBUG
-                .MinimumLevel.Debug()
-#endif
-                .Enrich.FromLogContext()
-                .WriteTo.Console(outputTemplate:
-                    "{Timestamp:o} {Level:w3}: {Message:lj} {Properties:j}{NewLine}{Exception}")
-                //.WriteTo.Console(new Serilog.Formatting.Json.JsonFormatter())
-                .CreateLogger();
-
-            Log.Information("No contextual properties");
+            Logging.Init();
 
             // You may need to configure the Windows Namespace reservation to assign
             // rights to use the port that you set below.
