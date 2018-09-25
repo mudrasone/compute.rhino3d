@@ -7,6 +7,7 @@ using Nancy.TinyIoc;
 using Nancy.Gzip;
 using System.Collections.Generic;
 using compute.frontend.Authentication;
+using Serilog;
 
 namespace compute.frontend
 {
@@ -14,6 +15,7 @@ namespace compute.frontend
     {
         static void Main(string[] args)
         {
+            Logger.Init();
             // You may need to configure the Windows Namespace reservation to assign
             // rights to use the port that you set below.
             // See: https://github.com/NancyFx/Nancy/wiki/Self-Hosting-Nancy
